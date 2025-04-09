@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Interactive World Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    #map { height: 500px; }
+    #controls {
+      margin-bottom: 10px;
+    }
+    select, button {
+      padding: 6px;
+      margin-left: 10px;
+      font-size: 1rem;
+    }
+    #selectedList {
+      margin-top: 15px;
+      padding-left: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="controls">
+    <label for="countrySelect">Select a country:</label>
+    <select id="countrySelect">
+      <option value="" disabled selected>Select...</option>
+    </select>
+    <button id="clearBtn">Clear Entries</button>
+    <button id="exportBtn">Export List</button>
+  </div>
+
+  <div id="map"></div>
+
+  <div id="selectedList">
+    <h3>Selected Countries:</h3>
+    <ul id="countryList"></ul>
+  </div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    var map = L.map('map', {
+      minZoom: 2
+    }).setView([20, 0], 2);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    var geojsonLayer;
+    var countrySelect = document.getElementById('countrySelect');
+    var clearBtn = document.getElementById('clearBtn');
+    var exportBtn = document.getElementById('exportBtn');
+    var countryList = document.getElementById('countryList');
+
+    const selectedCountries = new Set();
+
+    fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
+      .then(response => response.json())
+      .then(data => {
+        geojsonLayer = L.geoJson(data, {
+          style: {
+            color: "black",
+            weight: 1,
+            fillColor: "gray",
+            fillOpacity: 0.5
+          },
+          onEachFeature: function (feature, layer) {
+            const countryName = feature.properties.name;
+            layer._countryName = countryName;
+
+            // Show tooltip on hover
+            layer.bindTooltip(countryName, { sticky: true });
+
+            layer.on('click', function () {
+              if (!selectedCountries.has(countryName)) {
+                highlightCountry(layer, countryName);
+              }
+            });
+          }
+        }).addTo(map);
+
+        populateDropdown(data);
+      });
+
+    function populateDropdown(data) {
+      let countries = data.features.map(f => f.properties.name).sort();
+      countries.forEach(country => {
+        let option = document.createElement("option");
+        option.value = country;
+        option.textContent = country;
+        countrySelect.appendChild(option);
+      });
+    }
+
+    function highlightCountry(layer, name) {
+      layer.setStyle({ fillColor: "red", fillOpacity: 0.8 });
+      selectedCountries.add(name);
+      updateCountryList();
+    }
+
+    function updateCountryList() {
+      countryList.innerHTML = "";
+      Array.from(selectedCountries).sort().forEach(name => {
+        let li = document.createElement("li");
+        li.textContent = name;
+        countryList.appendChild(li);
+      });
+    }
+
+    countrySelect.addEventListener("change", function () {
+      let selectedCountry = this.value;
+
+      geojsonLayer.eachLayer(layer => {
+        if (layer._countryName === selectedCountry && !selectedCountries.has(selectedCountry)) {
+          highlightCountry(layer, selectedCountry);
+        }
+      });
+    });
+
+    clearBtn.addEventListener("click", function () {
+      geojsonLayer.eachLayer(layer => {
+        layer.setStyle({
+          color: "black",
+          weight: 1,
+          fillColor: "gray",
+          fillOpacity: 0.5
+        });
+      });
+      selectedCountries.clear();
+      updateCountryList();
+    });
+
+    exportBtn.addEventListener("click", function () {
+      if (selectedCountries.size === 0) {
+        alert("No countries selected to export.");
+        return;
+      }
+
+      const list = Array.from(selectedCountries).sort().join("\n");
+      const blob = new Blob([list], { type: "text/plain" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "selected_countries.txt";
+      link.click();
+    });
+  </script>
+
+</body>
+</html>
