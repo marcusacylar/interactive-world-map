@@ -45,8 +45,7 @@
                         color: 'red',
                         fillOpacity: 0.7
                     });
-                    map.fitBounds(layer.getBounds());
-                }
+                    }
             });
         }
 
@@ -98,5 +97,9 @@
                 });
             });
     </script>
+
+<button onclick="resetHighlights()" style="margin: 10px;">Reset Selection</button>
+<ul id="selected-list" style="margin: 10px;"></ul>
+
 </body>
 </html>
