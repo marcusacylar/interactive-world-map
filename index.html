@@ -11,7 +11,7 @@
     #controls {
       margin-bottom: 10px;
     }
-    select, button {
+    select, button, input {
       padding: 6px;
       margin-left: 10px;
       font-size: 1rem;
@@ -26,6 +26,8 @@
 
   <div id="controls">
     <label for="countrySelect">Select a country:</label>
+    <input type="text" id="countryInput" placeholder="Type a country name" maxlength="40" list="suggestions" pattern="[A-Za-z\s]+" />
+    <datalist id="suggestions"></datalist>
     <select id="countrySelect">
       <option value="" disabled selected>Select...</option>
     </select>
@@ -72,7 +74,6 @@
             const countryName = feature.properties.ADMIN || feature.properties.name;
             layer._countryName = countryName;
 
-            // Show tooltip on hover
             layer.bindTooltip(countryName, { sticky: true });
 
             layer.on('click', function () {
@@ -83,16 +84,26 @@
           }
         }).addTo(map);
 
-        populateDropdown(data);
+        const countries = data.features.map(f => f.properties.ADMIN || f.properties.name).sort();
+        populateDropdown(countries);
+        populateSuggestions(countries);
       });
 
-    function populateDropdown(data) {
-      let countries = data.features.map(f => f.properties.ADMIN || f.properties.name).sort();
+    function populateDropdown(countries) {
       countries.forEach(country => {
         let option = document.createElement("option");
         option.value = country;
         option.textContent = country;
         countrySelect.appendChild(option);
+      });
+    }
+
+    function populateSuggestions(countries) {
+      const datalist = document.getElementById("suggestions");
+      countries.forEach(country => {
+        let opt = document.createElement("option");
+        opt.value = country;
+        datalist.appendChild(opt);
       });
     }
 
@@ -113,10 +124,25 @@
 
     countrySelect.addEventListener("change", function () {
       let selectedCountry = this.value;
-
       geojsonLayer.eachLayer(layer => {
         if (layer._countryName === selectedCountry && !selectedCountries.has(selectedCountry)) {
           highlightCountry(layer, selectedCountry);
+        }
+      });
+    });
+
+    document.getElementById("countryInput").addEventListener("change", function () {
+      const input = this.value.trim();
+      const isValid = /^[a-zA-Z\s]{1,40}$/.test(input);
+      if (!isValid) {
+        alert("Please enter only letters (max 40 characters).");
+        return;
+      }
+
+      geojsonLayer.eachLayer(layer => {
+        const name = layer._countryName;
+        if (name.toLowerCase() === input.toLowerCase() && !selectedCountries.has(name)) {
+          highlightCountry(layer, name);
         }
       });
     });
