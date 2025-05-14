@@ -7,7 +7,7 @@
   <title>Interactive World Map</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
-    #map { height: 500px; }
+    #map { height: 750px; } /* Increased height for better visibility */
     #controls {
       margin-bottom: 10px;
     }
@@ -48,7 +48,6 @@
       minZoom: 2
     }).setView([20, 0], 2);
 
-    // CartoDB Positron tile layer with English labels
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; OpenStreetMap & CartoDB',
       subdomains: 'abcd',
@@ -56,35 +55,19 @@
     }).addTo(map);
 
     var geojsonLayer;
-    var countrySelect = document.getElementById('countrySelect');
-    var clearBtn = document.getElementById('clearBtn');
-    var exportBtn = document.getElementById('exportBtn');
-    var countryList = document.getElementById('countryList');
-
     const selectedCountries = new Set();
 
     fetch('countries.geo.json')
       .then(response => response.json())
       .then(data => {
         geojsonLayer = L.geoJson(data, {
-          style: {
-            color: "black",
-            weight: 1,
-            fillColor: "gray",
-            fillOpacity: 0.5
-          },
+          style: { color: "black", weight: 1, fillColor: "gray", fillOpacity: 0.5 },
           onEachFeature: function (feature, layer) {
             const countryName = feature.properties.ADMIN || feature.properties.name;
             layer._countryName = countryName;
-
-            layer.bindTooltip(countryName, {
-              sticky: true
-            });
-
+            layer.bindTooltip(countryName, { sticky: true });
             layer.on('click', function () {
-              if (!selectedCountries.has(countryName)) {
-                highlightCountry(layer, countryName);
-              }
+              if (!selectedCountries.has(countryName)) highlightCountry(layer, countryName);
             });
           }
         }).addTo(map);
@@ -95,20 +78,21 @@
       });
 
     function populateDropdown(countries) {
+      const select = document.getElementById('countrySelect');
       countries.forEach(country => {
-        let option = document.createElement("option");
+        const option = document.createElement("option");
         option.value = country;
         option.textContent = country;
-        countrySelect.appendChild(option);
+        select.appendChild(option);
       });
     }
 
     function populateSuggestions(countries) {
       const datalist = document.getElementById("suggestions");
       countries.forEach(country => {
-        let opt = document.createElement("option");
-        opt.value = country;
-        datalist.appendChild(opt);
+        const option = document.createElement("option");
+        option.value = country;
+        datalist.appendChild(option);
       });
     }
 
@@ -119,66 +103,20 @@
     }
 
     function updateCountryList() {
-      countryList.innerHTML = "";
+      const list = document.getElementById("countryList");
+      list.innerHTML = "";
       Array.from(selectedCountries).sort().forEach(name => {
-        let li = document.createElement("li");
+        const li = document.createElement("li");
         li.textContent = name;
-        countryList.appendChild(li);
+        list.appendChild(li);
       });
     }
 
-    countrySelect.addEventListener("change", function () {
-      let selectedCountry = this.value;
-      geojsonLayer.eachLayer(layer => {
-        if (layer._countryName === selectedCountry && !selectedCountries.has(selectedCountry)) {
-          highlightCountry(layer, selectedCountry);
-        }
-      });
-    });
-
-    document.getElementById("countryInput").addEventListener("change", function () {
-      const input = this.value.trim();
-      const isValid = /^[a-zA-Z\s]{1,40}$/.test(input);
-      if (!isValid) {
-        alert("Please enter only letters (max 40 characters).");
-        return;
-      }
-
-      geojsonLayer.eachLayer(layer => {
-        const name = layer._countryName;
-        if (name.toLowerCase() === input.toLowerCase() && !selectedCountries.has(name)) {
-          highlightCountry(layer, name);
-        }
-      });
-    });
-
-    clearBtn.addEventListener("click", function () {
-      geojsonLayer.eachLayer(layer => {
-        layer.setStyle({
-          color: "black",
-          weight: 1,
-          fillColor: "gray",
-          fillOpacity: 0.5
-        });
-      });
+    document.getElementById("clearBtn").addEventListener("click", function () {
+      geojsonLayer.eachLayer(layer => layer.setStyle({ fillColor: "gray", fillOpacity: 0.5 }));
       selectedCountries.clear();
       updateCountryList();
     });
-
-    exportBtn.addEventListener("click", function () {
-      if (selectedCountries.size === 0) {
-        alert("No countries selected to export.");
-        return;
-      }
-
-      const list = Array.from(selectedCountries).sort().join("\n");
-      const blob = new Blob([list], { type: "text/plain" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "selected_countries.txt";
-      link.click();
-    });
   </script>
-
 </body>
 </html>
