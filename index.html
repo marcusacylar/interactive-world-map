@@ -42,7 +42,57 @@
     <ul id="countryList"></ul>
   </div>
 
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js">
+    // Restore functionality for highlighting via dropdown, text input, and map click
+    document.getElementById("countrySelect").addEventListener("change", function () {
+      const selectedCountry = this.value;
+      geojsonLayer.eachLayer(layer => {
+        if (layer._countryName === selectedCountry) {
+          highlightCountry(layer, selectedCountry);
+        }
+      });
+    });
+
+    document.getElementById("countryInput").addEventListener("keypress", function (e) {
+      if (e.key === "Enter") {
+        const input = this.value.trim();
+        if (/^[a-zA-Z\s]{1,40}$/.test(input)) {
+          geojsonLayer.eachLayer(layer => {
+            const name = layer._countryName;
+            if (name.toLowerCase() === input.toLowerCase()) {
+              highlightCountry(layer, name);
+            }
+          });
+        } else {
+          alert("Please enter only letters (max 40 characters).");
+        }
+      }
+    });
+
+    function highlightCountry(layer, name) {
+      layer.setStyle({ fillColor: "red", fillOpacity: 0.8 });
+      selectedCountries.add(name);
+      updateCountryList();
+    }
+
+    function updateCountryList() {
+      const list = document.getElementById("countryList");
+      list.innerHTML = "";
+      Array.from(selectedCountries).sort().forEach(name => {
+        const li = document.createElement("li");
+        li.textContent = name;
+        list.appendChild(li);
+      });
+    }
+
+    // Clear highlights
+    clearBtn.addEventListener("click", function () {
+      geojsonLayer.eachLayer(layer => layer.setStyle({ fillColor: "gray", fillOpacity: 0.5 }));
+      selectedCountries.clear();
+      updateCountryList();
+    });
+    </script>
+    
   <script>
     var map = L.map('map', {
       minZoom: 2
@@ -117,6 +167,56 @@
       selectedCountries.clear();
       updateCountryList();
     });
-  </script>
+  
+    // Restore functionality for highlighting via dropdown, text input, and map click
+    document.getElementById("countrySelect").addEventListener("change", function () {
+      const selectedCountry = this.value;
+      geojsonLayer.eachLayer(layer => {
+        if (layer._countryName === selectedCountry) {
+          highlightCountry(layer, selectedCountry);
+        }
+      });
+    });
+
+    document.getElementById("countryInput").addEventListener("keypress", function (e) {
+      if (e.key === "Enter") {
+        const input = this.value.trim();
+        if (/^[a-zA-Z\s]{1,40}$/.test(input)) {
+          geojsonLayer.eachLayer(layer => {
+            const name = layer._countryName;
+            if (name.toLowerCase() === input.toLowerCase()) {
+              highlightCountry(layer, name);
+            }
+          });
+        } else {
+          alert("Please enter only letters (max 40 characters).");
+        }
+      }
+    });
+
+    function highlightCountry(layer, name) {
+      layer.setStyle({ fillColor: "red", fillOpacity: 0.8 });
+      selectedCountries.add(name);
+      updateCountryList();
+    }
+
+    function updateCountryList() {
+      const list = document.getElementById("countryList");
+      list.innerHTML = "";
+      Array.from(selectedCountries).sort().forEach(name => {
+        const li = document.createElement("li");
+        li.textContent = name;
+        list.appendChild(li);
+      });
+    }
+
+    // Clear highlights
+    clearBtn.addEventListener("click", function () {
+      geojsonLayer.eachLayer(layer => layer.setStyle({ fillColor: "gray", fillOpacity: 0.5 }));
+      selectedCountries.clear();
+      updateCountryList();
+    });
+    </script>
+    
 </body>
 </html>
